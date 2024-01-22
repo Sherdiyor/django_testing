@@ -3,17 +3,15 @@ from datetime import datetime, timedelta
 import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.utils import timezone
-from django.urls import reverse
 from django.test import Client
-
+from django.urls import reverse
+from django.utils import timezone
 
 from news.models import Comment, News
 
 User = get_user_model()
 HOME_URL = 'news:home'
 DETAIL_URL = 'news:detail'
-client = Client()
 
 
 @pytest.fixture
@@ -67,23 +65,14 @@ def comment_date(author, news):
 
 @pytest.fixture
 def author_client(author):
+    client = Client()
     client.force_login(author)
     return client
 
 
 @pytest.fixture
-def news_id(news):
-    return news.pk,
-
-
-@pytest.fixture
-def comment_id(comment):
-    return comment.pk,
-
-
-@pytest.fixture
-def url_detail(news_id):
-    return reverse(DETAIL_URL, args=news_id)
+def url_detail(news):
+    return reverse(DETAIL_URL, args=(news.id,))
 
 
 @pytest.fixture
@@ -92,10 +81,25 @@ def url_home():
 
 
 @pytest.fixture
-def url_delete(comment_id):
-    return reverse('news:delete', args=comment_id)
+def url_delete(comment):
+    return reverse('news:delete', args=(comment.id,))
 
 
 @pytest.fixture
-def url_edit(comment_id):
-    return reverse('news:edit', args=comment_id)
+def url_edit(comment):
+    return reverse('news:edit', args=(comment.id,))
+
+
+@pytest.fixture
+def url_login():
+    return reverse('users:login')
+
+
+@pytest.fixture
+def url_signup():
+    return reverse('users:signup')
+
+
+@pytest.fixture
+def url_logout():
+    return reverse('users:logout')

@@ -1,8 +1,9 @@
 from http import HTTPStatus
-from random import choices
 
 import pytest
+
 from django.urls import reverse
+
 from pytest_django.asserts import assertFormError, assertRedirects
 
 from news.forms import BAD_WORDS, WARNING
@@ -13,16 +14,15 @@ pytestmark = pytest.mark.django_db
 form_date = {'text': 'ТЕКСТ'}
 
 
-def test_user_create_comment(author_client, news_id, url_detail):
+def test_user_create_comment(author_client, url_detail):
     cnt_before_comment = Comment.objects.count()
     response = author_client.post(url_detail, data=form_date)
     cnt_after_comment = Comment.objects.count()
     assertRedirects(response, url_detail + '#comments')
-    assert cnt_before_comment == 0
-    assert cnt_after_comment == 1
+    assert cnt_after_comment - 1 == cnt_before_comment
 
 
-def test_anonymus_create_comment(client, news_id, url_detail):
+def test_anonymus_create_comment(client, url_detail):
     cnt_before_comment = Comment.objects.count()
     response = client.post(url_detail, data=form_date)
     cnt_after_comment = Comment.objects.count()
@@ -31,17 +31,16 @@ def test_anonymus_create_comment(client, news_id, url_detail):
     assert cnt_before_comment == cnt_after_comment
 
 
-def test_create_comment_with_bad_word(author_client, news_id, url_detail):
-    for word in choices(BAD_WORDS):
-        bad_word_text = {
-            'text': word
-        }
-        response = author_client.post(url_detail, data=bad_word_text)
-        assertFormError(response, form='form', field='text', errors=WARNING)
+def test_create_comment_with_bad_word(author_client, url_detail):
+    bad_word_text = {
+        'text': BAD_WORDS[0]
+    }
+    response = author_client.post(url_detail, data=bad_word_text)
+    assertFormError(response, form='form', field='text', errors=WARNING)
 
 
 def test_author_can_edit_comment(
-        author_client, comment_id, comment, news_id, url_edit,
+        author_client, comment, url_edit,
         url_detail, author, news
 ):
     response = author_client.post(url_edit, data=form_date)
@@ -53,7 +52,7 @@ def test_author_can_edit_comment(
 
 
 def test_author_can_delete_comment(
-        author_client, comment_id, news_id, comment, url_delete, url_detail
+        author_client, comment, url_delete, url_detail
 ):
     cnt_before_delete = Comment.objects.count()
     response = author_client.post(url_delete)
@@ -63,16 +62,16 @@ def test_author_can_delete_comment(
 
 
 def test_other_cant_edit_comment(
-        admin_client, comment_id, comment, url_edit
+        admin_client, comment, url_edit
 ):
-    comment_text = comment.text
     response = admin_client.post(url_edit, data=form_date)
+    comment_text = Comment.objects.get(id=comment.id)
     assert response.status_code == HTTPStatus.NOT_FOUND
-    assert comment.text == comment_text
+    assert comment.text == comment_text.text
 
 
 def test_other_cant_delete_comment(
-        admin_client, comment_id, comment, url_delete
+        admin_client, comment, url_delete
 ):
     response = admin_client.post(url_delete)
     assert response.status_code == HTTPStatus.NOT_FOUND
