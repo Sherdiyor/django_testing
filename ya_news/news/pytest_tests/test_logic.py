@@ -1,9 +1,6 @@
 from http import HTTPStatus
 
 import pytest
-
-from django.urls import reverse
-
 from pytest_django.asserts import assertFormError, assertRedirects
 
 from news.forms import BAD_WORDS, WARNING
@@ -22,12 +19,11 @@ def test_user_create_comment(author_client, url_detail):
     assert cnt_after_comment - 1 == cnt_before_comment
 
 
-def test_anonymus_create_comment(client, url_detail):
+def test_anonymus_create_comment(client, url_detail, url_login):
     cnt_before_comment = Comment.objects.count()
     response = client.post(url_detail, data=form_date)
     cnt_after_comment = Comment.objects.count()
-    login_url = reverse('users:login')
-    assertRedirects(response, f'{login_url}?next={url_detail}')
+    assertRedirects(response, f'{url_login}?next={url_detail}')
     assert cnt_before_comment == cnt_after_comment
 
 
@@ -68,6 +64,8 @@ def test_other_cant_edit_comment(
     comment_text = Comment.objects.get(id=comment.id)
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert comment.text == comment_text.text
+    assert comment.news == comment_text.news
+    assert comment.author == comment_text.author
 
 
 def test_other_cant_delete_comment(

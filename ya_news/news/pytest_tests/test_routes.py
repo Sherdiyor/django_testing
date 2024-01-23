@@ -1,9 +1,6 @@
 from http import HTTPStatus
 
 import pytest
-
-from django.urls import reverse
-
 from pytest_django.asserts import assertRedirects
 from pytest_lazyfixture import lazy_fixture as lf
 
@@ -19,10 +16,9 @@ HTTP_NF = HTTPStatus.NOT_FOUND
         (lf('url_delete'))
     )
 )
-def test_comment_edit_delete_redirect(client, url):
+def test_comment_edit_delete_redirect(client, url, url_login):
     response = client.get(url)
-    login = reverse('users:login')
-    assertRedirects(response, f'{login}?next={url}')
+    assertRedirects(response, f'{url_login}?next={url}')
 
 
 @pytest.mark.parametrize(
